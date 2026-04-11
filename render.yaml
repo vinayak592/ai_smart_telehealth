@@ -1,0 +1,25 @@
+services:
+  # Backend API Service
+  - type: web
+    name: telehealth-backend
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: NODE_ENV
+        value: production
+
+  # Frontend Static Site
+  - type: web
+    name: telehealth-frontend
+    runtime: static
+    buildCommand: flutter build web --release
+    staticPublishPath: ./build/web
+    pullRequestPreviewsEnabled: true
+    envVars:
+      - key: FLUTTER_WEB_USE_EXPERIMENTAL_CANVAS_TEXT
+        value: true

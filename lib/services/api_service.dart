@@ -5,8 +5,11 @@ import '../models/user.dart';
 import '../models/symptom.dart';
 
 class ApiService {
-  // Use localhost for web, 10.0.2.2 for Android emulator, or your machine IP for physical devices
-  static const String baseUrl = 'http://localhost:5001';
+  // Use environment variable for production, fallback to localhost for development
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:5001',
+  );
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
