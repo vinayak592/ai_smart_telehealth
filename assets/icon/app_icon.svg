@@ -1,0 +1,11 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#00ACC1"/>
+  <g transform="translate(256, 256)">
+    <!-- Medical Cross -->
+    <rect x="200" y="150" width="128" height="320" fill="white" rx="20"/>
+    <rect x="136" y="214" width="256" height="128" fill="white" rx="20"/>
+    <!-- Heart -->
+    <path d="M 400 300 C 400 250, 450 200, 512 250 C 574 200, 624 250, 624 300 C 624 350, 512 450, 512 450 C 512 450, 400 350, 400 300 Z" fill="#FF6B6B"/>
+  </g>
+  <text x="512" y="800" font-family="Arial, sans-serif" font-size="48" fill="white" text-anchor="middle">TeleHealth</text>
+</svg>

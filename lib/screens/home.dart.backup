@@ -1,0 +1,481 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
+import 'symptom_input.dart';
+import 'chatbot.dart';
+import 'doctors.dart';
+import 'profile.dart';
+import 'health_tips.dart';
+import 'appointments.dart';
+import 'emergency_sos.dart';
+import 'health_metrics.dart';
+import 'medication_tracker.dart';
+import 'analytics_dashboard.dart';
+import 'health_dashboard.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+  int _selectedIndex = 0;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  static List<Widget> get _widgetOptions => [
+    const HomeContent(),
+    const SymptomInputScreen(),
+    const ChatbotScreen(),
+    const DoctorsScreen(),
+    const ProfileScreen(),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF667EEA),
+              Color(0xFF764BA2),
+              Color(0xFFF093FB),
+              Color(0xFFF5576C),
+            ],
+          ),
+        ),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: _widgetOptions.elementAt(_selectedIndex),
+        ),
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+          ),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.medical_services),
+              label: 'Symptoms',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.chat),
+              label: 'AI Chat',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people),
+              label: 'Doctors',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white70,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          onTap: _onItemTapped,
+          type: BottomNavigationBarType.fixed,
+        ),
+      ),
+      floatingActionButton: _selectedIndex == 0 ? Container(
+        height: 70,
+        width: 70,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Colors.red, Colors.redAccent],
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.red.withOpacity(0.3),
+              blurRadius: 10,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const EmergencySOSScreen()),
+            );
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: const Icon(
+            Icons.emergency,
+            size: 30,
+            color: Colors.white,
+          ),
+        ),
+      ) : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+}
+
+class HomeContent extends StatefulWidget {
+  const HomeContent({super.key});
+
+  @override
+  _HomeContentState createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<HomeContent> with TickerProviderStateMixin {
+  late AnimationController _cardAnimationController;
+  late Animation<double> _cardAnimation;
+
+  final List<Map<String, dynamic>> _healthStats = [
+    {'title': 'Heart Rate', 'value': '72 BPM', 'icon': Icons.favorite, 'color': Colors.red},
+    {'title': 'Steps Today', 'value': '8,432', 'icon': Icons.directions_walk, 'color': Colors.green},
+    {'title': 'Sleep Hours', 'value': '7.2h', 'icon': Icons.nightlight_round, 'color': Colors.blue},
+    {'title': 'Water Intake', 'value': '6/8 glasses', 'icon': Icons.local_drink, 'color': Colors.cyan},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _cardAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _cardAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _cardAnimationController, curve: Curves.elasticOut),
+    );
+    _cardAnimationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _cardAnimationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = Provider.of<UserProvider>(context).user;
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Welcome Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hello, ${user?.name ?? 'User'}! 👋',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        'How are you feeling today?',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(
+                      Icons.notifications,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 30),
+
+              // Health Stats Cards
+              SizedBox(
+                height: 120,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: _healthStats.length,
+                  itemBuilder: (context, index) {
+                    final stat = _healthStats[index];
+                    return AnimatedBuilder(
+                      animation: _cardAnimation,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: _cardAnimation.value,
+                          child: Container(
+                            width: 140,
+                            margin: const EdgeInsets.only(right: 15),
+                            padding: const EdgeInsets.all(15),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.2),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(stat['icon'], size: 24, color: Colors.white),
+                                const SizedBox(height: 8),
+                                Text(
+                                  stat['value'],
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  stat['title'],
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white.withOpacity(0.7),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              // Quick Actions
+              Text(
+                'Quick Actions',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Quick action buttons in a simple column for now
+              Column(
+                children: [
+                  _buildQuickActionButton(
+                    context,
+                    'Symptom Check',
+                    Icons.medical_services,
+                    Colors.teal,
+                    () => Navigator.pushNamed(context, '/symptoms'),
+                  ),
+                  const SizedBox(height: 15),
+                  _buildQuickActionButton(
+                    context,
+                    'AI Chatbot',
+                    Icons.chat_bubble,
+                    Colors.purple,
+                    () => Navigator.pushNamed(context, '/chatbot'),
+                  ),
+                  const SizedBox(height: 15),
+                  _buildQuickActionButton(
+                    context,
+                    'Find Doctor',
+                    Icons.people,
+                    Colors.orange,
+                    () => Navigator.pushNamed(context, '/doctors'),
+                  ),
+                  const SizedBox(height: 15),
+                  _buildQuickActionButton(
+                    context,
+                    'Health Dashboard',
+                    Icons.dashboard,
+                    Colors.blue,
+                    () => Navigator.pushNamed(context, '/dashboard'),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 30),
+
+              // Daily Health Tip
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: const Icon(
+                        Icons.lightbulb,
+                        color: Colors.amber,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Daily Health Tip',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            'Stay hydrated! Drink at least 8 glasses of water daily for optimal health.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionButton(BuildContext context, String title, IconData icon, Color color, VoidCallback onTap) {
+    return AnimatedBuilder(
+      animation: _cardAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _cardAnimation.value,
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(icon, size: 32, color: Colors.white),
+                  const SizedBox(width: 15),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 20,
+                    color: Colors.white.withOpacity(0.7),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
