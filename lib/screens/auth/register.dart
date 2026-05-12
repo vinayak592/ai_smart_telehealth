@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/user.dart';
 import '../../providers/user_provider.dart';
-import '../home.dart';
+
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -34,7 +34,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         phone: _phoneController.text,
       );
       Provider.of<UserProvider>(context, listen: false).setUser(user);
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+      Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       // Fallback to local user creation if API fails
       final user = User(
@@ -44,7 +44,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         phone: _phoneController.text,
       );
       Provider.of<UserProvider>(context, listen: false).setUser(user);
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+      Navigator.pushReplacementNamed(context, '/home');
     }
     setState(() => _isLoading = false);
   }

@@ -1,5 +1,5 @@
 name: my_telehealth_app
-description: "AI Smart Telehealth Assistant Platform Mobile App"
+description: "AI Smart Telehealth Assistant Platform Web App"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -39,6 +39,7 @@ dependencies:
   shared_preferences: ^2.2.3
   url_launcher: ^6.3.2
   fl_chart: ^0.66.1
+  image_picker: ^1.0.7
 
 dev_dependencies:
   flutter_test:

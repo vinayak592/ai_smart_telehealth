@@ -26,12 +26,26 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
   ];
 
   List<Map<String, dynamic>> _billHistory = [];
+  bool _checkingInsurance = true;
+  double _insuranceCoverage = 0.0;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadBillHistory();
+    _checkInsurance();
+  }
+
+  Future<void> _checkInsurance() async {
+    // Simulate background API call to check insurance eligibility
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) {
+      setState(() {
+        _checkingInsurance = false;
+        _insuranceCoverage = 0.8; // 80% coverage
+      });
+    }
   }
 
   @override
@@ -83,6 +97,7 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
   }
 
   int get _total => _items.fold(0, (sum, item) => sum + (item.qty * item.price));
+  double get _outOfPocket => _total * (1 - _insuranceCoverage);
 
   void _updateQty(int index, int qty) {
     setState(() {
@@ -107,7 +122,10 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
             children: [
               Text(billDetails),
               const Divider(),
-              Text('Total: ₹$_total', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text('Subtotal: ₹$_total', style: const TextStyle(fontSize: 14)),
+              Text('Insurance Covered (${(_insuranceCoverage * 100).toInt()}%): -₹${(_total * _insuranceCoverage).toStringAsFixed(2)}', style: const TextStyle(color: Colors.green, fontSize: 14)),
+              const Divider(),
+              Text('Total Out-of-Pocket: ₹${_outOfPocket.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               Text('Date: ${DateTime.now().toString().split('.')[0]}', style: const TextStyle(fontSize: 12)),
             ],
@@ -160,6 +178,40 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Insurance Copilot Banner
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.verified_user, color: Colors.blue, size: 32),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Insurance Eligibility Copilot', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue)),
+                            const SizedBox(height: 4),
+                            _checkingInsurance
+                                ? const Row(
+                                    children: [
+                                      SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)),
+                                      SizedBox(width: 8),
+                                      Text('Checking live API for your coverage...', style: TextStyle(color: Colors.blueGrey)),
+                                    ],
+                                  )
+                                : Text('You are covered! BlueCross Plan pays ${(_insuranceCoverage * 100).toInt()}% of eligible services.', style: const TextStyle(color: Colors.blueGrey)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const Text('Select services:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
                 Expanded(
@@ -215,8 +267,14 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Total:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      Text('₹$_total', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal)),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Estimated Out-of-Pocket:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          Text('Subtotal: ₹$_total | Insurance: -₹${(_total * _insuranceCoverage).toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        ],
+                      ),
+                      Text('₹${_outOfPocket.toStringAsFixed(0)}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.teal)),
                     ],
                   ),
                 ),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../providers/user_provider.dart';
-import 'home.dart';
 import 'auth/login.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -56,13 +55,9 @@ class _SplashScreenState extends State<SplashScreen>
     Timer(const Duration(seconds: 3), () {
       final user = Provider.of<UserProvider>(context, listen: false).user;
       if (user == null) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
+        Navigator.pushReplacementNamed(context, '/login');
       } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
+        Navigator.pushReplacementNamed(context, '/home');
       }
     });
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/google_fit_service.dart';
+
 class AnalyticsDashboardScreen extends StatefulWidget {
   const AnalyticsDashboardScreen({super.key});
 
@@ -8,6 +10,12 @@ class AnalyticsDashboardScreen extends StatefulWidget {
 }
 
 class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
+  final GoogleFitService _googleFitService = GoogleFitService();
+  int? _dailySteps;
+  List<HeartRateReading>? _heartRates;
+  bool _isLoadingFit = false;
+  String? _fitError;
+
   final List<Map<String, dynamic>> _symptomHistory = [
     {'date': '2024-03-15', 'symptoms': ['fever', 'cough'], 'severity': 3},
     {'date': '2024-03-10', 'symptoms': ['headache'], 'severity': 2},
@@ -23,6 +31,39 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     'sore throat': 6,
     'nausea': 3,
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchGoogleFitMetrics();
+  }
+
+  Future<void> _fetchGoogleFitMetrics() async {
+    setState(() {
+      _isLoadingFit = true;
+      _fitError = null;
+    });
+
+    try {
+      final steps = await _googleFitService.fetchDailyStepCount();
+      final heartRates = await _googleFitService.fetchLastHeartRateReadings();
+
+      setState(() {
+        _dailySteps = steps;
+        _heartRates = heartRates;
+      });
+    } catch (error) {
+      setState(() {
+        _fitError = error.toString();
+        _dailySteps = null;
+        _heartRates = null;
+      });
+    } finally {
+      setState(() {
+        _isLoadingFit = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +147,100 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                               ),
                             ),
                           ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Google Fit Metrics
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Google Fit Metrics',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_isLoadingFit)
+                      const Center(child: CircularProgressIndicator())
+                    else if (_fitError != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Unable to load Google Fit data.',
+                            style: TextStyle(color: Colors.red[700]),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _fitError ?? '',
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      )
+                    else
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Daily steps: ${_dailySteps ?? 'No data'}',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Recent heart rate readings',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 8),
+                          if (_heartRates == null || _heartRates!.isEmpty)
+                            const Text('No heart rate data available.', style: TextStyle(color: Colors.grey))
+                          else
+                            Column(
+                              children: _heartRates!.map((reading) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '${reading.bpm.toStringAsFixed(0)} bpm',
+                                        style: const TextStyle(fontWeight: FontWeight.w600),
+                                      ),
+                                      Text(
+                                        '${reading.time.hour.toString().padLeft(2, "0")}:${reading.time.minute.toString().padLeft(2, "0")}',
+                                        style: const TextStyle(color: Colors.grey),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                        ],
+                      ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton.icon(
+                          onPressed: _fetchGoogleFitMetrics,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Refresh'),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () => Navigator.pushNamed(context, '/prescriptions'),
+                          icon: const Icon(Icons.note_add),
+                          label: const Text('Add Prescription'),
                         ),
                       ],
                     ),
@@ -251,6 +386,58 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                 ),
               ),
             ),
+
+            const SizedBox(height: 24),
+
+            // Advanced AI Features
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Advanced AI Features',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        _buildFeatureButton(
+                          'Skin Lesion Scanner',
+                          Icons.camera_alt,
+                          Colors.purple,
+                          () => Navigator.pushNamed(context, '/skin-lesion'),
+                        ),
+                        _buildFeatureButton(
+                          'Gait Analysis',
+                          Icons.directions_walk,
+                          Colors.blue,
+                          () => Navigator.pushNamed(context, '/gait-analysis'),
+                        ),
+                        _buildFeatureButton(
+                          'Clinical Scribe',
+                          Icons.mic,
+                          Colors.green,
+                          () => Navigator.pushNamed(context, '/clinical-scribe'),
+                        ),
+                        _buildFeatureButton(
+                          'Live Translation',
+                          Icons.translate,
+                          Colors.orange,
+                          () => Navigator.pushNamed(context, '/translation'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -285,6 +472,32 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       default:
         return Icons.help;
     }
+  }
+
+  Widget _buildFeatureButton(String title, IconData icon, Color color, VoidCallback onPressed) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildInsightCard(String title, String description, IconData icon, Color color) {

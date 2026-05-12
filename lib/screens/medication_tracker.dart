@@ -21,6 +21,54 @@ class _MedicationTrackerScreenState extends State<MedicationTrackerScreen> {
       return;
     }
 
+    // Simple Drug Interaction Check Simulation
+    bool hasWarning = false;
+    String warningMessage = '';
+    
+    final newMedName = _nameController.text.toLowerCase();
+    for (var med in _medications) {
+      final existingMed = med['name'].toString().toLowerCase();
+      if ((newMedName.contains('aspirin') && existingMed.contains('ibuprofen')) ||
+          (newMedName.contains('ibuprofen') && existingMed.contains('aspirin'))) {
+        hasWarning = true;
+        warningMessage = 'CRITICAL WARNING: Combining Aspirin and Ibuprofen can increase bleeding risk.';
+      }
+    }
+
+    if (hasWarning) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Drug Interaction Detected'),
+            ],
+          ),
+          content: Text(warningMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _saveMedication();
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Add Anyway'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      _saveMedication();
+    }
+  }
+
+  void _saveMedication() {
     setState(() {
       _medications.add({
         'name': _nameController.text,
@@ -37,6 +85,36 @@ class _MedicationTrackerScreenState extends State<MedicationTrackerScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Medication added successfully!')),
+    );
+  }
+
+  Future<void> _simulateOCRScan() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Scanning Label via AR...'),
+          ],
+        ),
+      ),
+    );
+
+    await Future.delayed(const Duration(seconds: 2));
+    Navigator.pop(context); // close dialog
+
+    setState(() {
+      _nameController.text = 'Ibuprofen';
+      _dosageController.text = '400mg';
+      _frequencyController.text = 'Every 6 hours';
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Label scanned successfully!')),
     );
   }
 
@@ -81,13 +159,27 @@ class _MedicationTrackerScreenState extends State<MedicationTrackerScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Add New Medication',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.teal,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Add New Medication',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F62FE),
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _simulateOCRScan,
+                        icon: const Icon(Icons.camera_alt),
+                        label: const Text('Scan Label'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF0F62FE),
+                          side: const BorderSide(color: Color(0xFF0F62FE)),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   TextField(

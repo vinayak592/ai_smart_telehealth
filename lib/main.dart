@@ -18,6 +18,11 @@ import 'screens/hospital_facilities.dart';
 import 'screens/billing.dart';
 import 'screens/achievements.dart';
 import 'screens/bookings.dart';
+import 'screens/prescription_entry.dart';
+import 'screens/real_time_translation.dart';
+import 'screens/skin_lesion_scanner.dart';
+import 'screens/ambient_clinical_scribe.dart';
+import 'screens/gait_mobility_analysis.dart';
 
 void main() {
   runApp(
@@ -39,36 +44,56 @@ class MyApp extends StatelessWidget {
       title: 'AI Telehealth Assistant',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.teal,
-        scaffoldBackgroundColor: Colors.grey[50],
+        useMaterial3: true,
+        primaryColor: const Color(0xFF0F62FE),
+        scaffoldBackgroundColor: const Color(0xFFF4F7FC),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF0F62FE),
+          primary: const Color(0xFF0F62FE),
+          secondary: const Color(0xFF8A3FFC),
+          surface: Colors.white,
+          background: const Color(0xFFF4F7FC),
+        ),
+        fontFamily: 'Roboto', // Default clean font
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.teal,
-          foregroundColor: Colors.white,
+          backgroundColor: Colors.white,
+          foregroundColor: Color(0xFF161616),
           elevation: 0,
+          centerTitle: false,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.teal,
+            backgroundColor: const Color(0xFF0F62FE),
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
             ),
+            elevation: 0,
           ),
         ),
-        cardTheme: const CardThemeData(
-          elevation: 4,
+        cardTheme: CardThemeData(
+          elevation: 0,
+          color: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.grey.shade200),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.grey.shade50,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           focusedBorder: OutlineInputBorder(
-            borderSide: const BorderSide(color: Colors.teal, width: 2),
-            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF0F62FE), width: 2),
+            borderRadius: BorderRadius.circular(8),
           ),
         ),
       ),
@@ -90,6 +115,11 @@ class MyApp extends StatelessWidget {
         '/billing': (context) => const BillingScreen(),
         '/achievements': (context) => const AchievementsScreen(),
         '/bookings': (context) => const BookingsScreen(),
+        '/prescriptions': (context) => PrescriptionEntryScreen(),
+        '/skin-lesion': (context) => const SkinLesionScannerScreen(),
+        '/clinical-scribe': (context) => const AmbientClinicalScribeScreen(),
+        '/gait-analysis': (context) => const GaitMobilityAnalysisScreen(),
+        '/translation': (context) => RealTimeTranslationScreen(),
       },
     );
   }

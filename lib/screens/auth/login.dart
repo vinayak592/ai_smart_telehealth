@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/user.dart';
 import '../../services/api_service.dart';
 import '../../providers/user_provider.dart';
-import '../home.dart';
+
 import 'register.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -46,10 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     Provider.of<UserProvider>(context, listen: false).setUser(user);
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-    );
+    Navigator.pushReplacementNamed(context, '/home');
 
     if (!mounted) return;
     setState(() => _isLoading = false);

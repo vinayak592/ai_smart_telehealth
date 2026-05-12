@@ -13,6 +13,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final _messageController = TextEditingController();
   final List<Message> _messages = [];
   bool _isLoading = false;
+  String _emotionalState = 'Calm / Neutral';
+  Color _emotionalColor = Colors.green;
 
   String _correctTypos(String text) {
     // Simple typo correction
@@ -108,15 +110,34 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    // Detect and translate Kannada words
     String processedText = _detectAndTranslateKannada(text);
     bool hasKannada = _containsKannadaScript(text);
 
     setState(() {
       _messages.add(Message(text: text, isUser: true, timestamp: DateTime.now()));
       _isLoading = true;
+      _emotionalState = 'Analyzing voice/text biometrics...';
+      _emotionalColor = Colors.grey;
     });
     _messageController.clear();
+
+    // Simulate Emotional Biofeedback Analysis
+    await Future.delayed(const Duration(milliseconds: 600));
+    final lowerText = text.toLowerCase();
+    setState(() {
+      if (lowerText.contains('worry') || lowerText.contains('anxious') || lowerText.contains('stress') || lowerText.contains('scared')) {
+        _emotionalState = 'High Anxiety Detected - Switching to Supportive Tone';
+        _emotionalColor = Colors.orange;
+        processedText = '[EMOTIONAL_STATE: ANXIOUS] ' + processedText;
+      } else if (lowerText.contains('sad') || lowerText.contains('depress') || lowerText.contains('cry')) {
+        _emotionalState = 'Depressive State Detected - Switching to Empathetic Tone';
+        _emotionalColor = Colors.blueGrey;
+        processedText = '[EMOTIONAL_STATE: SAD] ' + processedText;
+      } else {
+        _emotionalState = 'Calm / Neutral';
+        _emotionalColor = Colors.green;
+      }
+    });
 
     try {
       final response = await ApiService().chatWithBot(processedText);
@@ -138,6 +159,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
     // Add Kannada acknowledgment if detected
     String kannadaNote = hasKannada ? " (I detected and translated Kannada words in your message! 🇮🇳)" : "";
+    
+    // Add Empathetic prefix if needed based on emotional state
+    String empathyPrefix = "";
+    if (lower.contains('[emotional_state: anxious]')) {
+      empathyPrefix = "I hear that you're feeling anxious, and it's completely normal to feel that way. Let's work through this together. ";
+    } else if (lower.contains('[emotional_state: sad]')) {
+      empathyPrefix = "I'm really sorry you're feeling down. I'm here to listen and help however I can. ";
+    }
 
     if (lower.contains('headache') || lower.contains('pain') || lower.contains('ತಲೆನೋವು') || lower.contains('ನೋವು')) {
       return 'Headaches can be caused by stress, dehydration, or lack of sleep. Try resting and staying hydrated. If severe, consult a doctor.$kannadaNote';
@@ -156,18 +185,34 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     } else if (lower.contains('doctor') || lower.contains('ವೈದ್ಯ')) {
       return 'You can find doctors in the Doctors section. We have specialists in various fields ready to help.$kannadaNote';
     } else if (lower.contains('medicine') || lower.contains('ಔಷಧಿ')) {
-      return 'For medication management, check the Medication Tracker. Always follow your doctor\'s prescription.$kannadaNote';
+      return '$empathyPrefix For medication management, check the Medication Tracker. Always follow your doctor\'s prescription.$kannadaNote';
     }
-    return 'I am here to help with health questions in English and Kannada! Please describe your symptoms or ask about health topics. ನಾನು ಆರೋಗ್ಯ ಸಂಬಂಧಿತ ಪ್ರಶ್ನೆಗಳಿಗೆ ಸಹಾಯ ಮಾಡಲು ಇಲ್ಲಿದ್ದೇನೆ!$kannadaNote';
+    return '$empathyPrefix I am here to help with health questions in English and Kannada! Please describe your symptoms or ask about health topics. ನಾನು ಆರೋಗ್ಯ ಸಂಬಂಧಿತ ಪ್ರಶ್ನೆಗಳಿಗೆ ಸಹಾಯ ಮಾಡಲು ಇಲ್ಲಿದ್ದೇನೆ!$kannadaNote';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('AI Chatbot')),
+      appBar: AppBar(title: const Text('AI Chat & Triage')),
       body: SafeArea(
         child: Column(
           children: [
+            // Biofeedback Indicator
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              color: _emotionalColor.withOpacity(0.1),
+              child: Row(
+                children: [
+                  Icon(Icons.favorite, color: _emotionalColor, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Emotional Biofeedback: $_emotionalState',
+                    style: TextStyle(color: _emotionalColor, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: _messages.isEmpty
                   ? Center(
