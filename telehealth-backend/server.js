@@ -38,6 +38,18 @@ if (process.env.NODE_ENV === 'production') {
   
   app.use(express.static(distPath));
   console.log('Serving static files from:', distPath);
+  
+  // Explicit root route
+  app.get('/', (req, res) => {
+    const indexPath = path.join(distPath, 'index.html');
+    console.log('Serving index.html for root path');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('Error serving index.html:', err);
+        res.status(500).send('Error loading application');
+      }
+    });
+  });
 }
 
 const triageSymptomsWithLLM = async (symptomsText) => {
