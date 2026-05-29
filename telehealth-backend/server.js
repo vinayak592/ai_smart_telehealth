@@ -16,7 +16,9 @@ app.use(express.json());
 
 // Serve frontend static files in production (must be before API routes)
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/dist')));
+  const distPath = path.join(__dirname, '../frontend/dist');
+  app.use(express.static(distPath));
+  console.log('Serving static files from:', distPath);
 }
 
 const triageSymptomsWithLLM = async (symptomsText) => {
@@ -869,8 +871,15 @@ app.post('/doctor/add_prescription', verifyToken, async (req, res) => {
 
 // Catch-all route for SPA - must be after all API routes
 if (process.env.NODE_ENV === 'production') {
+  const indexPath = path.join(__dirname, '../frontend/dist/index.html');
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+    console.log('Serving index.html for path:', req.path);
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('Error serving index.html:', err);
+        res.status(500).send('Error loading application');
+      }
+    });
   });
 }
 
