@@ -14,6 +14,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve frontend static files in production (must be before API routes)
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../frontend/dist')));
+}
+
 const triageSymptomsWithLLM = async (symptomsText) => {
   if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your_openai_api_key_here') {
     // Graceful fallback for mock testing without OpenAI Key
@@ -862,9 +867,8 @@ app.post('/doctor/add_prescription', verifyToken, async (req, res) => {
   }
 });
 
-// Serve frontend static files in production
+// Catch-all route for SPA - must be after all API routes
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/dist')));
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
   });
