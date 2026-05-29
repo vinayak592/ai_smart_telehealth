@@ -16,37 +16,50 @@ app.use(express.json());
 
 // Serve frontend static files in production (must be before API routes)
 if (process.env.NODE_ENV === 'production') {
+  const fs = require('fs');
+  
   // Try multiple possible paths for Render environment
   const possiblePaths = [
     path.join(__dirname, '../frontend/dist'),
     path.join(__dirname, '../../frontend/dist'),
     path.join(process.cwd(), 'frontend/dist'),
-    '/opt/render/project/src/frontend/dist'
+    '/opt/render/project/src/frontend/dist',
+    path.join(process.cwd(), '../frontend/dist')
   ];
+  
+  console.log('Current working directory:', process.cwd());
+  console.log('__dirname:', __dirname);
+  console.log('Possible paths:', possiblePaths);
   
   let distPath = possiblePaths[0];
   for (const p of possiblePaths) {
+    console.log('Checking path:', p);
     try {
-      if (require('fs').existsSync(p)) {
+      if (fs.existsSync(p)) {
+        console.log('Found dist folder at:', p);
         distPath = p;
         break;
       }
     } catch (e) {
-      // Continue to next path
+      console.log('Error checking path:', p, e.message);
     }
   }
   
+  console.log('Final distPath:', distPath);
+  console.log('Files in dist:', fs.existsSync(distPath) ? fs.readdirSync(distPath) : 'Folder does not exist');
+  
   app.use(express.static(distPath));
-  console.log('Serving static files from:', distPath);
+  console.log('Static middleware configured for:', distPath);
   
   // Explicit root route
   app.get('/', (req, res) => {
     const indexPath = path.join(distPath, 'index.html');
-    console.log('Serving index.html for root path');
+    console.log('Root route hit, serving:', indexPath);
+    console.log('Index file exists:', fs.existsSync(indexPath));
     res.sendFile(indexPath, (err) => {
       if (err) {
         console.error('Error serving index.html:', err);
-        res.status(500).send('Error loading application');
+        res.status(500).send('Error loading application: ' + err.message);
       }
     });
   });
