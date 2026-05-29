@@ -477,3 +477,250 @@ input:focus, select:focus, textarea:focus {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 240px;
+  }
+  
+  .sidebar-brand-text {
+    font-size: 18px;
+  }
+  
+  .grid-dashboard {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -280px;
+    top: 0;
+    height: 100vh;
+    transition: left 0.3s ease;
+    z-index: 1000;
+  }
+  
+  .sidebar.open {
+    left: 0;
+  }
+  
+  .mobile-menu-toggle {
+    display: flex !important;
+  }
+  
+  .topbar {
+    padding: 0 16px;
+    height: 64px;
+  }
+  
+  .page-title {
+    font-size: 18px;
+  }
+  
+  .content-scroll {
+    padding: 16px;
+  }
+  
+  .grid-dashboard {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .hero-widget {
+    padding: 24px;
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+  
+  .hero-widget::before {
+    width: 200px;
+    height: 200px;
+    top: -50px;
+    right: -50px;
+  }
+  
+  .modal-sheet {
+    width: 95%;
+    padding: 24px;
+  }
+  
+  .drawer-sheet {
+    max-width: 100%;
+  }
+  
+  .card {
+    padding: 20px;
+  }
+  
+  .action-card-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+  
+  .action-card-title {
+    font-size: 15px;
+  }
+  
+  .action-card-desc {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 100%;
+    left: -100%;
+  }
+  
+  .sidebar.open {
+    left: 0;
+  }
+  
+  .topbar {
+    padding: 0 12px;
+    height: 56px;
+  }
+  
+  .page-title {
+    font-size: 16px;
+  }
+  
+  .topbar-actions {
+    gap: 12px;
+  }
+  
+  .avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
+  }
+  
+  .content-scroll {
+    padding: 12px;
+  }
+  
+  .card {
+    padding: 16px;
+    border-radius: var(--radius-md);
+  }
+  
+  .hero-widget {
+    padding: 20px;
+    border-radius: var(--radius-md);
+  }
+  
+  .btn-primary {
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+  
+  input, select, textarea {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  
+  .modal-sheet {
+    padding: 20px;
+    width: 100%;
+    max-width: none;
+    border-radius: var(--radius-md);
+    margin: 16px;
+  }
+  
+  .sidebar-brand {
+    padding: 0 16px 24px;
+  }
+  
+  .sidebar-brand-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+  
+  .nav-item {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+}
+
+/* Mobile Menu Toggle Button */
+.mobile-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-toggle:hover {
+  background-color: var(--surface-hover);
+  color: var(--primary-color);
+}
+
+/* Mobile Backdrop */
+.mobile-backdrop {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  animation: fadeIn 0.2s ease;
+}
+
+.mobile-backdrop.active {
+  display: block;
+}
+
+/* Responsive Tables */
+@media (max-width: 768px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Responsive Images */
+@media (max-width: 768px) {
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 18px; }
+  h4 { font-size: 16px; }
+  p { font-size: 14px; }
+}
+
+@media (max-width: 480px) {
+  h1 { font-size: 20px; }
+  h2 { font-size: 18px; }
+  h3 { font-size: 16px; }
+  h4 { font-size: 14px; }
+  p { font-size: 13px; }
+}

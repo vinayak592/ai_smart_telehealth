@@ -25,7 +25,9 @@ import {
   ChevronDown,
   Check,
   Building,
-  UserCheck
+  UserCheck,
+  Menu,
+  X
 } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
@@ -48,7 +50,7 @@ import Appointments from './pages/Appointments';
 import AdminDashboard from './pages/AdminDashboard';
 import './index.css';
 
-function PatientSidebar() {
+function PatientSidebar({ isOpen, onClose }) {
   const location = useLocation();
 
   const navItems = [
@@ -66,13 +68,36 @@ function PatientSidebar() {
     { name: 'Architecture', icon: <Code size={20} />, path: '/architecture' },
   ];
 
+  const handleNavClick = () => {
+    if (onClose) onClose();
+  };
+
   return (
-    <div className="sidebar">
+    <div className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="sidebar-brand">
         <div className="sidebar-brand-icon">
           <HeartPulse size={24} />
         </div>
         <div className="sidebar-brand-text">Aura Health</div>
+        {onClose && (
+          <button 
+            onClick={onClose}
+            style={{
+              marginLeft: 'auto',
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '8px',
+              display: window.innerWidth <= 768 ? 'flex' : 'none',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
       
       <div className="nav-menu">
@@ -81,6 +106,7 @@ function PatientSidebar() {
             key={item.name} 
             to={item.path} 
             className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+            onClick={handleNavClick}
           >
             {item.icon}
             {item.name}
@@ -90,7 +116,7 @@ function PatientSidebar() {
 
       <div style={{ marginTop: 'auto', padding: '0 24px', marginBottom: '24px' }}>
         <hr style={{ borderColor: 'var(--border-color)', marginBottom: '16px' }} />
-        <Link to="/emergency" className="nav-item" style={{ color: 'var(--danger-color)' }}>
+        <Link to="/emergency" className="nav-item" style={{ color: 'var(--danger-color)' }} onClick={handleNavClick}>
           <AlertTriangle size={20} />
           Emergency SOS
         </Link>
@@ -99,7 +125,7 @@ function PatientSidebar() {
   );
 }
 
-function DoctorSidebar() {
+function DoctorSidebar({ isOpen, onClose }) {
   const location = useLocation();
 
   const navItems = [
@@ -110,13 +136,36 @@ function DoctorSidebar() {
     { name: 'Architecture', icon: <Code size={20} />, path: '/architecture' },
   ];
 
+  const handleNavClick = () => {
+    if (onClose) onClose();
+  };
+
   return (
-    <div className="sidebar">
+    <div className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="sidebar-brand">
         <div className="sidebar-brand-icon" style={{ background: 'linear-gradient(135deg, var(--danger-color), var(--warning-color))' }}>
           <HeartPulse size={24} />
         </div>
         <div className="sidebar-brand-text" style={{ fontSize: '20px' }}>Aura Provider</div>
+        {onClose && (
+          <button 
+            onClick={onClose}
+            style={{
+              marginLeft: 'auto',
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '8px',
+              display: window.innerWidth <= 768 ? 'flex' : 'none',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
       
       <div className="nav-menu">
@@ -125,6 +174,7 @@ function DoctorSidebar() {
             key={item.name} 
             to={item.path} 
             className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+            onClick={handleNavClick}
           >
             {item.icon}
             {item.name}
@@ -135,7 +185,7 @@ function DoctorSidebar() {
   );
 }
 
-function AdminSidebar() {
+function AdminSidebar({ isOpen, onClose }) {
   const location = useLocation();
 
   const navItems = [
@@ -145,13 +195,36 @@ function AdminSidebar() {
     { name: 'Core Architecture', icon: <Code size={20} />, path: '/architecture' },
   ];
 
+  const handleNavClick = () => {
+    if (onClose) onClose();
+  };
+
   return (
-    <div className="sidebar">
+    <div className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="sidebar-brand">
         <div className="sidebar-brand-icon" style={{ background: 'linear-gradient(135deg, var(--primary-color), var(--success-color))' }}>
           <Shield size={24} />
         </div>
         <div className="sidebar-brand-text" style={{ fontSize: '19px' }}>Aura Admin</div>
+        {onClose && (
+          <button 
+            onClick={onClose}
+            style={{
+              marginLeft: 'auto',
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '8px',
+              display: window.innerWidth <= 768 ? 'flex' : 'none',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
       
       <div className="nav-menu">
@@ -160,6 +233,7 @@ function AdminSidebar() {
             key={item.name} 
             to={item.path} 
             className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+            onClick={handleNavClick}
           >
             {item.icon}
             {item.name}
@@ -173,6 +247,7 @@ function AdminSidebar() {
 function Layout({ role, user, setAuthInfo }) {
   const navigate = useNavigate();
   const [showProfileCard, setShowProfileCard] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const profileCardRef = useRef(null);
   
   // Theme Switching state
@@ -200,14 +275,23 @@ function Layout({ role, user, setAuthInfo }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Close mobile menu when clicking on backdrop
+  const handleBackdropClick = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(prev => !prev);
+  };
+
   const getSidebar = () => {
-    if (role === 'admin') return <AdminSidebar />;
-    if (role === 'doctor') return <DoctorSidebar />;
-    return <PatientSidebar />;
+    if (role === 'admin') return <AdminSidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;
+    if (role === 'doctor') return <DoctorSidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;
+    return <PatientSidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;
   };
 
   const getPageTitle = () => {
@@ -234,9 +318,25 @@ function Layout({ role, user, setAuthInfo }) {
     <div className="app-container">
       {getSidebar()}
       
+      {/* Mobile Backdrop */}
+      <div 
+        className={`mobile-backdrop ${isMobileMenuOpen ? 'active' : ''}`}
+        onClick={handleBackdropClick}
+      />
+      
       <div className="main-content">
         <div className="topbar">
-          <div className="page-title">{getPageTitle()}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {/* Mobile Menu Toggle Button */}
+            <button 
+              className="mobile-menu-toggle"
+              onClick={toggleMobileMenu}
+              aria-label="Toggle menu"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="page-title">{getPageTitle()}</div>
+          </div>
           
           <div className="topbar-actions">
             {/* Elegant Theme Switcher Button */}
