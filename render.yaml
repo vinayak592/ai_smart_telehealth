@@ -3,7 +3,7 @@ services:
   - type: web
     name: aura-health-telehealth
     runtime: node
-    buildCommand: npm install && npm run install-backend && npm run install-frontend && npm run build-frontend
+    buildCommand: cd frontend && npm install && npm run build && cd ../telehealth-backend && npm install
     startCommand: node telehealth-backend/server.js
     envVars:
       - key: MONGO_URI
