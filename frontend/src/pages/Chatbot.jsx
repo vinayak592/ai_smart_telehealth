@@ -81,7 +81,7 @@ export default function Chatbot() {
         <div style={{ padding: '24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h3 style={{ fontSize: '18px' }}>AI Medical Triage</h3>
-            <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Powered by OpenAI</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Powered by Gemini</div>
           </div>
         </div>
 

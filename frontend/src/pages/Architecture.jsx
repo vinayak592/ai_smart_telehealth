@@ -78,13 +78,13 @@ export default function Architecture() {
           <div style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '16px' }}>
             This platform integrates cutting-edge technologies to simulate a next-generation hospital:
             <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>OpenAI GPT-3.5 API:</strong> Powers the dynamic symptom triage, classifying urgency and specialties.</li>
+              <li style={{ marginBottom: '8px' }}><strong>Gemini API:</strong> Powers the dynamic symptom triage, classifying urgency and specialties.</li>
               <li style={{ marginBottom: '8px' }}><strong>Web Speech API:</strong> Native browser-level Speech-to-Text conversion for the Clinical Scribe.</li>
               <li style={{ marginBottom: '8px' }}><strong>WhatsApp Mock Service:</strong> Demonstrates omni-channel report sharing functionality (Twilio-ready).</li>
             </ul>
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <span className="badge" style={{ background: '#f3e5f5', color: '#6a1b9a', padding: '4px 12px', borderRadius: '16px', fontSize: '13px', fontWeight: 600 }}>OpenAI</span>
+            <span className="badge" style={{ background: '#f3e5f5', color: '#6a1b9a', padding: '4px 12px', borderRadius: '16px', fontSize: '13px', fontWeight: 600 }}>Gemini</span>
             <span className="badge" style={{ background: '#f3e5f5', color: '#6a1b9a', padding: '4px 12px', borderRadius: '16px', fontSize: '13px', fontWeight: 600 }}>Web Speech API</span>
             <span className="badge" style={{ background: '#f3e5f5', color: '#6a1b9a', padding: '4px 12px', borderRadius: '16px', fontSize: '13px', fontWeight: 600 }}>Twilio Mock</span>
           </div>

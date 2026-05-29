@@ -23,6 +23,6 @@ services:
       - key: TWILIO_WHATSAPP_NUMBER
         sync: false
         placeholder: "Optional Twilio WhatsApp Number (e.g., whatsapp:+14155238886)"
-      - key: OPENAI_API_KEY
+      - key: GEMINI_API_KEY
         sync: false
-        placeholder: "Optional OpenAI API Key for real-time symptom triage"
+        placeholder: "Optional Gemini API Key for real-time symptom triage"

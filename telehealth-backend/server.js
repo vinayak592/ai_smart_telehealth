@@ -52,9 +52,10 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const triageSymptomsWithLLM = async (symptomsText) => {
-  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your_openai_api_key_here') {
-    // Graceful fallback for mock testing without OpenAI Key
-    console.log("[Mock AI] Returning simulated triage due to missing OPENAI_API_KEY");
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  if (!geminiApiKey || geminiApiKey === 'your_gemini_api_key_here') {
+    // Graceful fallback for mock testing without GEMINI_API_KEY
+    console.log("[Mock AI] Returning simulated triage due to missing GEMINI_API_KEY");
     return {
       specialty: 'general_medicine',
       urgency_level: 3,
@@ -71,25 +72,43 @@ const triageSymptomsWithLLM = async (symptomsText) => {
     `Example response format: {"specialty":"cardiology","urgency_level":3,"suggested_questions":["When did this start?","Do you have chest pain?"], "dispatch_department": "Cardiology"}. ` +
     `Patient symptoms: ${symptomsText}`;
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const model = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta2/models/${model}:generateMessage?key=${encodeURIComponent(geminiApiKey)}`;
+
+  const response = await fetch(geminiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        { role: 'system', content: 'You are a helpful medical triage assistant.' },
-        { role: 'user', content: prompt },
-      ],
+      prompt: {
+        messages: [
+          { author: 'system', content: 'You are a helpful medical triage assistant.' },
+          { author: 'user', content: prompt },
+        ]
+      },
       temperature: 0.2,
-      max_tokens: 300,
+      topP: 0.95,
+      candidateCount: 1,
     }),
   });
 
   const data = await response.json();
-  const content = data?.choices?.[0]?.message?.content?.trim();
+  if (!response.ok) {
+    const apiError = data?.error?.message || `Gemini API error: ${response.status}`;
+    throw new Error(apiError);
+  }
+
+  const candidate = data?.candidates?.[0];
+  let content = '';
+  if (candidate?.content) {
+    content = candidate.content
+      .map(item => typeof item === 'string' ? item : item?.text || '')
+      .join('')
+      .trim();
+  } else if (typeof candidate?.output_text === 'string') {
+    content = candidate.output_text.trim();
+  }
 
   if (!content) {
     throw new Error('LLM did not return a valid response.');

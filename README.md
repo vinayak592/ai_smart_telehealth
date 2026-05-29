@@ -8,7 +8,7 @@ Aura Health is a high-fidelity, unified AI-powered telehealth platform designed 
 * **Frontend:** React + Vite + CSS Variables (Dark/Light mode).
 * **Backend:** Express + Node.js with built-in in-memory fallback store (no hard DB dependency to start testing!).
 * **Database (Optional):** MongoDB Atlas support.
-* **Integrations:** OpenAI API (for real-time triage routing) & Twilio WhatsApp notifications.
+* **Integrations:** Gemini API (for real-time triage routing) & Twilio WhatsApp notifications.
 
 ---
 
@@ -40,6 +40,8 @@ The repository is equipped with a `render.yaml` infrastructure configuration, wh
 5. Provide your configuration environment variables when prompted:
    * `MONGO_URI`: Your MongoDB connection string.
    * `JWT_SECRET`: A secure, secret string for authorization tokens.
-   * `OPENAI_API_KEY`: (Optional) OpenAI API Key for symptom triage.
+   * `GEMINI_API_KEY`: (Optional) Gemini API Key for symptom triage.
+     - Make sure your Google Cloud project has the **Generative AI API** enabled.
+     - The key must be authorized for the selected Gemini model.
    * `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_NUMBER`: (Optional) Credentials to enable WhatsApp notifications.
 6. Click **Deploy**!
