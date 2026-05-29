@@ -17,52 +17,38 @@ app.use(express.json());
 // Serve frontend static files in production (must be before API routes)
 if (process.env.NODE_ENV === 'production') {
   const fs = require('fs');
-  
-  // Try multiple possible paths for Render environment
-  const possiblePaths = [
-    path.join(__dirname, '../frontend/dist'),
-    path.join(__dirname, '../../frontend/dist'),
-    path.join(process.cwd(), 'frontend/dist'),
-    '/opt/render/project/src/frontend/dist',
-    path.join(process.cwd(), '../frontend/dist')
-  ];
-  
+  const expectedDistPath = path.join(__dirname, '../frontend/dist'); // This is the most likely path on Render
+
+  console.log('--- Production Static File Debugging ---');
   console.log('Current working directory:', process.cwd());
   console.log('__dirname:', __dirname);
-  console.log('Possible paths:', possiblePaths);
-  
-  let distPath = possiblePaths[0];
-  for (const p of possiblePaths) {
-    console.log('Checking path:', p);
-    try {
-      if (fs.existsSync(p)) {
-        console.log('Found dist folder at:', p);
-        distPath = p;
-        break;
-      }
-    } catch (e) {
-      console.log('Error checking path:', p, e.message);
-    }
-  }
-  
-  console.log('Final distPath:', distPath);
-  console.log('Files in dist:', fs.existsSync(distPath) ? fs.readdirSync(distPath) : 'Folder does not exist');
-  
-  app.use(express.static(distPath));
-  console.log('Static middleware configured for:', distPath);
-  
-  // Explicit root route
-  app.get('/', (req, res) => {
-    const indexPath = path.join(distPath, 'index.html');
-    console.log('Root route hit, serving:', indexPath);
-    console.log('Index file exists:', fs.existsSync(indexPath));
-    res.sendFile(indexPath, (err) => {
-      if (err) {
-        console.error('Error serving index.html:', err);
-        res.status(500).send('Error loading application: ' + err.message);
+  console.log('Expected dist path:', expectedDistPath);
+
+  if (fs.existsSync(expectedDistPath)) {
+    console.log('Dist folder found at:', expectedDistPath);
+    console.log('Files in dist:', fs.readdirSync(expectedDistPath));
+    app.use(express.static(expectedDistPath));
+    console.log('Static middleware configured for:', expectedDistPath);
+
+    app.get('*', (req, res) => { // Catch all routes for client-side routing
+      const indexPath = path.join(expectedDistPath, 'index.html');
+      console.log('Root/Catch-all route hit, serving:', indexPath);
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        console.error('index.html not found at:', indexPath);
+        res.status(404).send('Error: index.html not found');
       }
     });
-  });
+  } else {
+    console.error('Dist folder NOT found at:', expectedDistPath);
+    console.error('Current directory contents:', fs.readdirSync(__dirname));
+    console.error('Parent directory contents:', fs.readdirSync(path.join(__dirname, '..')));
+    app.get('/', (req, res) => {
+      res.status(500).send('Frontend not built or deployed correctly. Dist folder not found.');
+    });
+  }
+  console.log('--- End Production Static File Debugging ---');
 }
 
 const triageSymptomsWithLLM = async (symptomsText) => {
