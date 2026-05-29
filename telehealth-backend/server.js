@@ -16,7 +16,26 @@ app.use(express.json());
 
 // Serve frontend static files in production (must be before API routes)
 if (process.env.NODE_ENV === 'production') {
-  const distPath = path.join(__dirname, '../frontend/dist');
+  // Try multiple possible paths for Render environment
+  const possiblePaths = [
+    path.join(__dirname, '../frontend/dist'),
+    path.join(__dirname, '../../frontend/dist'),
+    path.join(process.cwd(), 'frontend/dist'),
+    '/opt/render/project/src/frontend/dist'
+  ];
+  
+  let distPath = possiblePaths[0];
+  for (const p of possiblePaths) {
+    try {
+      if (require('fs').existsSync(p)) {
+        distPath = p;
+        break;
+      }
+    } catch (e) {
+      // Continue to next path
+    }
+  }
+  
   app.use(express.static(distPath));
   console.log('Serving static files from:', distPath);
 }
@@ -871,7 +890,27 @@ app.post('/doctor/add_prescription', verifyToken, async (req, res) => {
 
 // Catch-all route for SPA - must be after all API routes
 if (process.env.NODE_ENV === 'production') {
-  const indexPath = path.join(__dirname, '../frontend/dist/index.html');
+  // Use the same path detection logic as static files
+  const possiblePaths = [
+    path.join(__dirname, '../frontend/dist'),
+    path.join(__dirname, '../../frontend/dist'),
+    path.join(process.cwd(), 'frontend/dist'),
+    '/opt/render/project/src/frontend/dist'
+  ];
+  
+  let distPath = possiblePaths[0];
+  for (const p of possiblePaths) {
+    try {
+      if (require('fs').existsSync(p)) {
+        distPath = p;
+        break;
+      }
+    } catch (e) {
+      // Continue to next path
+    }
+  }
+  
+  const indexPath = path.join(distPath, 'index.html');
   app.get('*', (req, res) => {
     console.log('Serving index.html for path:', req.path);
     res.sendFile(indexPath, (err) => {
