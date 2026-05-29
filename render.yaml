@@ -5,7 +5,6 @@ services:
     runtime: node
     buildCommand: npm install && npm run install-backend && npm run install-frontend && npm run build-frontend
     startCommand: node telehealth-backend/server.js
-    healthCheckPath: /
     envVars:
       - key: MONGO_URI
         sync: false
