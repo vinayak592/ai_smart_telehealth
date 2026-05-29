@@ -1,0 +1,28 @@
+services:
+  # Unified Aura Health Service (Backend & Frontend built as a single App)
+  - type: web
+    name: aura-health-telehealth
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: node telehealth-backend/server.js
+    envVars:
+      - key: MONGO_URI
+        sync: false
+        placeholder: "mongodb+srv://..."
+      - key: JWT_SECRET
+        sync: false
+        placeholder: "Generate a secure key"
+      - key: NODE_ENV
+        value: production
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+        placeholder: "Optional Twilio SID"
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+        placeholder: "Optional Twilio Auth Token"
+      - key: TWILIO_WHATSAPP_NUMBER
+        sync: false
+        placeholder: "Optional Twilio WhatsApp Number (e.g., whatsapp:+14155238886)"
+      - key: OPENAI_API_KEY
+        sync: false
+        placeholder: "Optional OpenAI API Key for real-time symptom triage"
