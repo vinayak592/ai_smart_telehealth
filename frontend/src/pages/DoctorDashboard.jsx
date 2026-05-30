@@ -31,49 +31,53 @@ export default function DoctorDashboard() {
       });
       const contentType = response.headers.get('content-type') || '';
       if (!response.ok) {
-         const message = response.status === 401 ? 'Unauthorized access to triage queue' : `Failed to fetch triage queue: ${response.status}`;
-         console.warn(message);
-         setQueueError(message);
-         return;
-       }
-       if (contentType.includes('application/json')) {
-         const data = await response.json();
-         if (Array.isArray(data)) setQueue(data);
-       } else {
-         const message = `Non-JSON response for triage_queue (${contentType})`;
-         console.warn(message);
-         setQueueError(message);
-       }
-     } catch (err) {
-       console.error(err);
-       setQueueError(err.message || 'Failed to fetch triage queue');
+        const message = response.status === 401 ? 'Unauthorized access to triage queue' : `Failed to fetch triage queue: ${response.status}`;
+        console.warn(message);
+        setQueueError(message);
+        return;
+      }
+      if (contentType.includes('application/json')) {
+        const data = await response.json();
+        if (Array.isArray(data)) setQueue(data);
+      } else {
+        const message = `Non-JSON response for triage_queue (${contentType})`;
+        console.warn(message);
+        setQueueError(message);
+      }
+    } catch (err) {
+      console.error(err);
+      setQueueError(err.message || 'Failed to fetch triage queue');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchAppointments = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/doctor/appointments', {
+        headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       const contentType = response.headers.get('content-type') || '';
       if (!response.ok) {
-         const message = response.status === 401 ? 'Unauthorized access to doctor appointments' : `Failed to fetch doctor appointments: ${response.status}`;
-         console.warn(message);
-         setAppointmentsError(message);
-         return;
-       }
-       if (contentType.includes('application/json')) {
-         const data = await response.json();
-         if (Array.isArray(data)) setAppointments(data);
-       } else {
-         const message = `Non-JSON response for doctor/appointments (${contentType})`;
-         console.warn(message);
-         setAppointmentsError(message);
-       }
-     } catch (err) {
-       console.error(err);
-       setAppointmentsError(err.message || 'Failed to fetch doctor appointments');
-    setSelectedPatient(patient);
-    setIsDrawerOpen(true);
-    setPrescribeMessage(null);
-    setPrescriptionName('');
-    setPrescriptionDosage('');
-    setPrescriptionSchedule('');
+        const message = response.status === 401 ? 'Unauthorized access to doctor appointments' : `Failed to fetch doctor appointments: ${response.status}`;
+        console.warn(message);
+        setAppointmentsError(message);
+        return;
+      }
+      if (contentType.includes('application/json')) {
+        const data = await response.json();
+        if (Array.isArray(data)) setAppointments(data);
+      } else {
+        const message = `Non-JSON response for doctor/appointments (${contentType})`;
+        console.warn(message);
+        setAppointmentsError(message);
+      }
+    } catch (err) {
+      console.error(err);
+      setAppointmentsError(err.message || 'Failed to fetch doctor appointments');
+    }
   };
 
   const handleCloseDrawer = () => {
