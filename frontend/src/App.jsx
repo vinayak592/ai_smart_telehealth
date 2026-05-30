@@ -536,20 +536,28 @@ function App() {
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role') || 'patient';
-    if (token) {
-      fetch('http://localhost:5001/profile', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      .then(res => {
-        if (res.ok) return res.json();
-        throw new Error('Invalid token');
-      })
-      .then(user => {
-        setAuthInfo({ authenticated: true, role, user });
-      })
-      .catch((err) => {
+    (async () => {
+      const token = localStorage.getItem('token');
+      const role = localStorage.getItem('role') || 'patient';
+      if (!token) {
+        setIsInitializing(false);
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:5001/profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          const user = await res.json();
+          setAuthInfo({ authenticated: true, role, user });
+        } else {
+          console.warn('Profile fetch returned non-JSON or non-OK response', res.status, contentType);
+          throw new Error('Invalid profile response');
+        }
+      } catch (err) {
         console.error('Session hydration failed:', err);
         // Fallback for mock demo session preservation
         setAuthInfo({ 
@@ -561,13 +569,11 @@ function App() {
             phone: '555-0000' 
           } 
         });
-      })
-      .finally(() => {
+      } finally {
         setIsInitializing(false);
-      });
-    } else {
-      setIsInitializing(false);
-    }
+      }
+    })();
+  }, []);
   }, []);
 
   const handleLoginSuccess = (role, user) => {

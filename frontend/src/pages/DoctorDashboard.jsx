@@ -27,9 +27,16 @@ export default function DoctorDashboard() {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        setQueue(data);
+      const contentType = response.headers.get('content-type') || '';
+      if (!response.ok) {
+        if (response.status === 401) console.warn('Unauthorized when fetching triage queue');
+        return;
+      }
+      if (contentType.includes('application/json')) {
+        const data = await response.json();
+        if (Array.isArray(data)) setQueue(data);
+      } else {
+        console.warn('Non-JSON response for triage_queue', contentType);
       }
     } catch (err) {
       console.error(err);
@@ -45,9 +52,16 @@ export default function DoctorDashboard() {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        setAppointments(data);
+      const contentType = response.headers.get('content-type') || '';
+      if (!response.ok) {
+        if (response.status === 401) console.warn('Unauthorized when fetching doctor appointments');
+        return;
+      }
+      if (contentType.includes('application/json')) {
+        const data = await response.json();
+        if (Array.isArray(data)) setAppointments(data);
+      } else {
+        console.warn('Non-JSON response for doctor/appointments', contentType);
       }
     } catch (err) {
       console.error(err);

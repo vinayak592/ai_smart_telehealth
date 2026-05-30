@@ -25,21 +25,29 @@ export default function Appointments() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost:5001/appointments', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setAppointments(data);
+    (async () => {
+      try {
+        const res = await fetch('http://localhost:5001/appointments', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const contentType = res.headers.get('content-type') || '';
+        if (!res.ok) {
+          if (res.status === 401) console.warn('Unauthorized when fetching appointments');
+          setAppointments([]);
+          return;
+        }
+        if (contentType.includes('application/json')) {
+          const data = await res.json();
+          setAppointments(Array.isArray(data) ? data : []);
         } else {
+          console.warn('Non-JSON response for /appointments', contentType);
           setAppointments([]);
         }
-      })
-      .catch(err => {
+      } catch (err) {
         console.error(err);
         setAppointments([]);
-      });
+      }
+    })();
   }, []);
 
   const selectSpecialtyAndDoctor = (spec) => {
