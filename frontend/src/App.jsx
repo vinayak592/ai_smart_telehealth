@@ -40,6 +40,7 @@ import DoctorDashboard from './pages/DoctorDashboard';
 import MedicationVault from './pages/MedicationVault';
 import ARScanner from './pages/ARScanner';
 import ClinicalScribe from './pages/ClinicalScribe';
+import VoiceSymptomChecker from './pages/VoiceSymptomChecker';
 import VitalsCDS from './pages/VitalsCDS';
 import BillingCopilot from './pages/BillingCopilot';
 import DoctorSummaries from './pages/DoctorSummaries';
@@ -59,6 +60,7 @@ function PatientSidebar({ isOpen, onClose }) {
     { name: 'Appointments', icon: <CalendarIcon size={20} />, path: '/appointments' },
     { name: 'Video Consult', icon: <Video size={20} />, path: '/video' },
     { name: 'AI Triage & Chat', icon: <MessageSquare size={20} />, path: '/chat' },
+    { name: 'Voice Symptom Check', icon: <Mic size={20} />, path: '/voice-symptoms' },
     { name: 'Medication Vault', icon: <Pill size={20} />, path: '/medications' },
     { name: 'AR Scanner', icon: <Scan size={20} />, path: '/scanner' },
     { name: 'Clinical Scribe', icon: <Mic size={20} />, path: '/scribe' },
@@ -511,6 +513,7 @@ function Layout({ role, user, setAuthInfo }) {
                 <Route path="/medications" element={<MedicationVault />} />
                 <Route path="/scanner" element={<ARScanner />} />
                 <Route path="/scribe" element={<ClinicalScribe user={user} />} />
+                <Route path="/voice-symptoms" element={<VoiceSymptomChecker user={user} />} />
                 <Route path="/vitals" element={<VitalsCDS user={user} />} />
                 <Route path="/billing" element={<BillingCopilot />} />
                 <Route path="/emergency" element={<EmergencySOS />} />

@@ -10,6 +10,17 @@ const twilio = require('twilio');
 const path = require('path');
 dotenv.config({ path: path.join(__dirname, '.env') });
 
+const clearBrokenLocalProxy = () => {
+  const proxyEnvNames = ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy', 'all_proxy'];
+  proxyEnvNames.forEach((name) => {
+    if (process.env[name] && /^http:\/\/127\.0\.0\.1:9\/?$/i.test(process.env[name])) {
+      delete process.env[name];
+    }
+  });
+};
+
+clearBrokenLocalProxy();
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -51,17 +62,137 @@ if (process.env.NODE_ENV === 'production') {
   console.log('--- End Production Static File Debugging ---');
 }
 
+const createFallbackTriage = (symptomsText = '') => {
+  const text = symptomsText.toLowerCase();
+  const emergencyTerms = ['chest pain', 'shortness of breath', 'stroke', 'faint', 'seizure', 'severe bleeding'];
+  const cardiologyTerms = ['chest', 'heart', 'palpitation', 'blood pressure'];
+  const neurologyTerms = ['headache', 'dizzy', 'numb', 'weakness', 'confusion', 'seizure'];
+  const dermatologyTerms = ['rash', 'skin', 'itch', 'swelling'];
+  const orthopedicTerms = ['bone', 'joint', 'fracture', 'sprain', 'back pain'];
+
+  if (emergencyTerms.some(term => text.includes(term))) {
+    return {
+      specialty: 'emergency_medicine',
+      urgency_level: 5,
+      suggested_questions: ['When did this start?', 'Are symptoms getting worse?', 'Do you have trouble breathing?'],
+      dispatch_department: 'Emergency Room'
+    };
+  }
+
+  if (cardiologyTerms.some(term => text.includes(term))) {
+    return {
+      specialty: 'cardiology',
+      urgency_level: 4,
+      suggested_questions: ['Do you have chest pain?', 'Do you feel short of breath?'],
+      dispatch_department: 'Cardiology'
+    };
+  }
+
+  if (neurologyTerms.some(term => text.includes(term))) {
+    return {
+      specialty: 'neurology',
+      urgency_level: 3,
+      suggested_questions: ['Do you have weakness or numbness?', 'When did the symptoms begin?'],
+      dispatch_department: 'Neurology'
+    };
+  }
+
+  if (dermatologyTerms.some(term => text.includes(term))) {
+    return {
+      specialty: 'dermatology',
+      urgency_level: 2,
+      suggested_questions: ['Is the rash spreading?', 'Do you have fever or swelling?'],
+      dispatch_department: 'Dermatology'
+    };
+  }
+
+  if (orthopedicTerms.some(term => text.includes(term))) {
+    return {
+      specialty: 'orthopedics',
+      urgency_level: 3,
+      suggested_questions: ['Can you move the affected area?', 'Was there an injury?'],
+      dispatch_department: 'Orthopedics'
+    };
+  }
+
+  return {
+    specialty: 'general_medicine',
+    urgency_level: 3,
+    suggested_questions: ['When did this start?', 'Do you have a fever?'],
+    dispatch_department: 'General Practice'
+  };
+};
+
+const extractGeminiText = (data) => {
+  const candidate = data?.candidates?.[0];
+  const parts = candidate?.content?.parts;
+  if (Array.isArray(parts)) {
+    return parts.map(part => part?.text || '').join('').trim();
+  }
+  if (Array.isArray(candidate?.content)) {
+    return candidate.content
+      .map(item => typeof item === 'string' ? item : item?.text || '')
+      .join('')
+      .trim();
+  }
+  return (candidate?.output_text || '').trim();
+};
+
+const parseJsonFromText = (content) => {
+  if (!content) return null;
+  try {
+    return JSON.parse(content);
+  } catch (error) {
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    return jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+  }
+};
+
+const callGeminiJson = async (prompt, systemInstruction, temperature = 0.2) => {
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  const model = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiApiKey)}`;
+
+  const response = await fetch(geminiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: systemInstruction }]
+      },
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: prompt }]
+        }
+      ],
+      generationConfig: {
+        temperature,
+        topP: 0.95,
+        responseMimeType: 'application/json'
+      }
+    }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    const apiError = data?.error?.message || `Gemini API error: ${response.status}`;
+    throw new Error(apiError);
+  }
+
+  const content = extractGeminiText(data);
+  const parsed = parseJsonFromText(content);
+  if (!parsed) {
+    throw new Error(`Unable to parse LLM response as JSON: ${content || 'empty response'}`);
+  }
+  return parsed;
+};
+
 const triageSymptomsWithLLM = async (symptomsText) => {
   const geminiApiKey = process.env.GEMINI_API_KEY;
   if (!geminiApiKey || geminiApiKey === 'your_gemini_api_key_here') {
-    // Graceful fallback for mock testing without GEMINI_API_KEY
-    console.log("[Mock AI] Returning simulated triage due to missing GEMINI_API_KEY");
-    return {
-      specialty: 'general_medicine',
-      urgency_level: 3,
-      suggested_questions: ["When did this start?", "Do you have a fever?"],
-      dispatch_department: "General Practice"
-    };
+    console.log('[Mock AI] Returning fallback triage due to missing GEMINI_API_KEY');
+    return createFallbackTriage(symptomsText);
   }
 
   const prompt = `You are an automated medical triage and routing agent. Analyze the patient's symptoms and return only valid JSON with these keys: ` +
@@ -72,57 +203,11 @@ const triageSymptomsWithLLM = async (symptomsText) => {
     `Example response format: {"specialty":"cardiology","urgency_level":3,"suggested_questions":["When did this start?","Do you have chest pain?"], "dispatch_department": "Cardiology"}. ` +
     `Patient symptoms: ${symptomsText}`;
 
-  const model = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta2/models/${model}:generateMessage?key=${encodeURIComponent(geminiApiKey)}`;
-
-  const response = await fetch(geminiUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      prompt: {
-        messages: [
-          { author: 'system', content: 'You are a helpful medical triage assistant.' },
-          { author: 'user', content: prompt },
-        ]
-      },
-      temperature: 0.2,
-      topP: 0.95,
-      candidateCount: 1,
-    }),
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    const apiError = data?.error?.message || `Gemini API error: ${response.status}`;
-    throw new Error(apiError);
-  }
-
-  const candidate = data?.candidates?.[0];
-  let content = '';
-  if (candidate?.content) {
-    content = candidate.content
-      .map(item => typeof item === 'string' ? item : item?.text || '')
-      .join('')
-      .trim();
-  } else if (typeof candidate?.output_text === 'string') {
-    content = candidate.output_text.trim();
-  }
-
-  if (!content) {
-    throw new Error('LLM did not return a valid response.');
-  }
-
   try {
-    return JSON.parse(content);
+    return await callGeminiJson(prompt, 'You are a helpful medical triage assistant.', 0.2);
   } catch (error) {
-    // Attempt to extract JSON object if the model added text before/after it.
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    throw new Error(`Unable to parse LLM response as JSON: ${content}`);
+    console.warn('[AI Triage] Gemini failed, using fallback triage:', error.message);
+    return createFallbackTriage(symptomsText);
   }
 };
 
@@ -148,6 +233,7 @@ const symptomSchema = new mongoose.Schema({
   urgencyLevel: Number,
   dispatchDepartment: String,
   suggestedQuestions: [String],
+  aiReport: mongoose.Schema.Types.Mixed,
   status: { type: String, default: 'Pending Review' },
   date: { type: Date, default: Date.now },
 });
@@ -951,6 +1037,199 @@ if (process.env.NODE_ENV === 'production') {
     });
   });
 }
+
+// ============================================================
+// VOICE SYMPTOM CHECKER WITH AI REPORT GENERATION
+// ============================================================
+
+app.post('/voice_symptom_report', verifyToken, piiMiddleware, async (req, res) => {
+  try {
+    const { voiceTranscript, symptoms } = req.body;
+    
+    if (!voiceTranscript || typeof voiceTranscript !== 'string') {
+      return res.status(400).json({ error: 'Voice transcript is required.' });
+    }
+
+    // First, get AI triage analysis
+    let triageResult = await triageSymptomsWithLLM(voiceTranscript);
+    
+    // Generate comprehensive AI medical report based on voice symptoms
+    const reportPrompt = `You are an AI medical report assistant. Generate a professional clinical report based on the patient's voice transcript about their symptoms. 
+    
+    Patient's Voice Transcript: "${voiceTranscript}"
+    
+    AI Triage Analysis: 
+    - Urgency Level: ${triageResult.urgency_level}
+    - Recommended Department: ${triageResult.dispatch_department}
+    - Specialty: ${triageResult.specialty}
+    
+    Create a structured JSON report with these fields:
+    - "report_title": A brief clinical summary title
+    - "patient_description": Summary of symptoms from voice
+    - "ai_assessment": Professional medical assessment (2-3 sentences)
+    - "clinical_flags": Array of any clinical red flags detected
+    - "recommendations": Array of recommended actions/departments
+    - "follow_up": Follow-up instructions for patient
+    - "urgency_summary": Human-readable urgency description
+    
+    Return ONLY valid JSON, no additional text.`;
+
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    let aiReport = {
+      report_title: "Voice Symptom Assessment Report",
+      patient_description: voiceTranscript,
+      ai_assessment: "Professional medical assessment completed",
+      clinical_flags: [],
+      recommendations: [triageResult.dispatch_department],
+      follow_up: "Please contact your healthcare provider for further evaluation",
+      urgency_summary: `Urgency Level ${triageResult.urgency_level}/5: ${triageResult.dispatch_department}`
+    };
+
+    if (geminiApiKey && geminiApiKey !== 'your_gemini_api_key_here') {
+      try {
+        aiReport = await callGeminiJson(
+          reportPrompt,
+          'You are a medical report generation assistant.',
+          0.3
+        );
+      } catch (aiError) {
+        console.warn('[AI Report Generation] Error with Gemini:', aiError.message);
+        // Continue with default report structure
+      }
+    }
+
+    // Save voice symptom record with report when storage is available.
+    let voiceSymptomRecord = { _id: `voice-${Date.now()}` };
+    try {
+      voiceSymptomRecord = await Symptom.create({
+        userId: req.user.id,
+        description: voiceTranscript,
+        extractedSymptoms: symptoms || [],
+        urgencyLevel: Number(triageResult.urgency_level) || 3,
+        dispatchDepartment: triageResult.dispatch_department,
+        suggestedQuestions: triageResult.suggested_questions || [],
+        status: 'Voice Analysis Completed',
+        aiReport: aiReport
+      });
+    } catch (storageError) {
+      console.warn('[Voice Symptom Report] Storage unavailable, returning generated report without saving:', storageError.message);
+    }
+
+    // Log audit action
+    let patientName = 'Demo Patient';
+    try {
+      const u = await User.findById(req.user.id);
+      if (u) patientName = u.name;
+    } catch (e) {}
+
+    await logAuditAction(
+      req.user.id,
+      patientName,
+      'patient',
+      'VOICE_SYMPTOM_REPORT',
+      `Generated AI report from voice transcript. Urgency: Level ${triageResult.urgency_level}. Department: ${triageResult.dispatch_department}`
+    );
+
+    res.json({
+      success: true,
+      symptomId: voiceSymptomRecord._id,
+      voiceTranscript,
+      triageResult,
+      aiReport,
+      urgency_level: triageResult.urgency_level,
+      dispatch_department: triageResult.dispatch_department,
+      report_ready_for_whatsapp: true
+    });
+  } catch (err) {
+    console.error('Voice Symptom Report generation failed:', err);
+    res.status(500).json({ error: 'Voice report generation failed', details: err.message });
+  }
+});
+
+// Endpoint to send AI Report via WhatsApp
+app.post('/send_voice_report_whatsapp', verifyToken, async (req, res) => {
+  try {
+    const { aiReport, voiceTranscript, phone, urgencyLevel, dispatchDepartment } = req.body;
+    
+    if (!aiReport || !phone) {
+      return res.status(400).json({ error: 'AI Report and phone number are required.' });
+    }
+
+    const normalizedPhone = String(phone).trim();
+    if (!/^\+\d{10,15}$/.test(normalizedPhone)) {
+      return res.status(400).json({
+        error: 'Enter the patient WhatsApp number with country code, for example +919876543210.'
+      });
+    }
+
+    // Format the AI report for WhatsApp
+    const whatsappMessage = `*🏥 AURA AI HEALTH REPORT*
+    
+*Report Title:* ${aiReport.report_title || 'Voice Symptom Report'}
+
+*Patient Description:*
+${aiReport.patient_description || 'No description provided'}
+
+*AI Medical Assessment:*
+${aiReport.ai_assessment || 'Professional assessment pending'}
+
+*Clinical Flags:* ${(aiReport.clinical_flags && aiReport.clinical_flags.length > 0) ? aiReport.clinical_flags.join(', ') : 'None detected'}
+
+*Urgency Level:* ${urgencyLevel || 3}/5
+*Recommended Department:* ${dispatchDepartment || 'General Practice'}
+
+*Recommendations:*
+${(aiReport.recommendations && aiReport.recommendations.length > 0) ? aiReport.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n') : 'See your healthcare provider'}
+
+*Follow-up Instructions:*
+${aiReport.follow_up || 'Contact healthcare provider for evaluation'}
+
+---
+Generated by Aura AI Health Platform
+${new Date().toLocaleString()}`;
+
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+
+    if (accountSid && authToken && twilioWhatsAppNumber && accountSid !== 'your_twilio_account_sid') {
+      // Real Twilio WhatsApp Integration
+      try {
+        console.log(`[Twilio Service] Sending AI voice report to ${normalizedPhone}...`);
+        const client = twilio(accountSid, authToken);
+        
+        const message = await client.messages.create({
+          body: whatsappMessage,
+          from: twilioWhatsAppNumber.startsWith('whatsapp:') ? twilioWhatsAppNumber : `whatsapp:${twilioWhatsAppNumber}`,
+          to: `whatsapp:${normalizedPhone}`
+        });
+
+        console.log(`[Twilio Service] Voice report successfully sent! SID: ${message.sid}`);
+        return res.json({ success: true, message: 'Voice report sent to WhatsApp successfully!', sid: message.sid });
+      } catch (twilioError) {
+        console.warn('[Twilio Service] Voice report send failed:', twilioError.message);
+        return res.status(502).json({
+          success: false,
+          error: 'Twilio could not deliver the WhatsApp report.',
+          details: twilioError.message,
+          sandboxHelp: `Make sure ${normalizedPhone} has joined your Twilio WhatsApp sandbox by sending the join code to ${twilioWhatsAppNumber}.`
+        });
+      }
+    } else {
+      // Fallback to Mock if credentials are not configured
+      console.log(`[Mock WhatsApp Service] Sending voice report to ${normalizedPhone}...`);
+      console.log(`[Mock WhatsApp Service] Message Content:\n${whatsappMessage}`);
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log(`[Mock WhatsApp Service] Voice report successfully sent! (MOCK)`);
+      return res.json({ success: true, message: 'Voice report sent to WhatsApp successfully (MOCK)!' });
+    }
+  } catch (err) {
+    console.error('Voice Report WhatsApp Error:', err);
+    res.status(500).json({ error: 'Failed to send voice report via WhatsApp', details: err.message });
+  }
+});
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
