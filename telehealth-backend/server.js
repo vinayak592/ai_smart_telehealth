@@ -335,6 +335,8 @@ const inMemoryStore = {
   auditLogs: []
 };
 
+const MOCK_USER_ID = '65f123456789abcdef012345';
+
 class MockQuery {
   constructor(data) {
     this.data = data;
@@ -400,6 +402,20 @@ class MockModel {
   }
 }
 
+const ensureDemoUser = async () => {
+  let user = await User.findById(MOCK_USER_ID);
+  if (user) return user;
+
+  return User.create({
+    _id: MOCK_USER_ID,
+    name: 'Alex Mercer',
+    email: 'patient@aura.com',
+    phone: '555-0000',
+    password: await bcrypt.hash('patient123', 10),
+    dob: '1992-08-15'
+  });
+};
+
 // Disable buffering to fail fast on DB operations if connection isn't ready
 mongoose.set('bufferCommands', false);
 
@@ -425,7 +441,7 @@ mongoose.connect(process.env.MONGO_URI, {
 const logAuditAction = async (userId, userName, role, action, details) => {
   try {
     await AuditLog.create({
-      userId: userId || '65f123456789abcdef012345',
+      userId: userId || MOCK_USER_ID,
       userName: userName || 'Demo User',
       role: role || 'patient',
       action,
@@ -447,12 +463,18 @@ const vitalRecordSchema = new mongoose.Schema({
 });
 const VitalRecord = mongoose.model('VitalRecord', vitalRecordSchema);
 
-const verifyToken = (req, res, next) => {
+const verifyToken = async (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'No token provided' });
   if (token === 'mock-jwt-token') {
-    req.user = { id: '65f123456789abcdef012345' };
-    return next();
+    try {
+      await ensureDemoUser();
+      req.user = { id: MOCK_USER_ID };
+      return next();
+    } catch (err) {
+      console.error('Failed to prepare demo user:', err);
+      return res.status(500).json({ error: 'Failed to prepare demo user' });
+    }
   }
   try {
     req.user = jwt.verify(token, process.env.JWT_SECRET);
@@ -660,6 +682,38 @@ app.get('/appointments', verifyToken, async (req, res) => {
   try {
     const appointments = await Appointment.find({ userId: req.user.id });
     res.json(appointments);
+  } catch (err) { res.status(500).json({ error: 'Failed to fetch appointments' }); }
+});
+// Doctor: Get all appointments
+app.get('/doctor/appointments', verifyToken, async (req, res) => {
+  try {
+    const appointments = await Appointment.find().sort({ date: -1 });
+    const enrichedAppointments = await Promise.all(appointments.map(async (appointment) => {
+      const appointmentData = appointment.toObject ? appointment.toObject() : { ...appointment };
+      const patient = appointmentData.userId ? await User.findById(appointmentData.userId) : null;
+      const patientData = patient && (patient.toObject ? patient.toObject() : { ...patient });
+      if (patientData) delete patientData.password;
+
+      return {
+        ...appointmentData,
+        patient: patientData ? {
+          id: patientData._id,
+          userId: patientData._id,
+          name: patientData.name,
+          email: patientData.email,
+          phone: patientData.phone,
+          dob: patientData.dob || '1990-01-01',
+          address: patientData.address,
+          bloodType: patientData.bloodType,
+          allergies: patientData.allergies,
+          insurance: patientData.insurance,
+          policyNumber: patientData.policyNumber,
+          emergencyContact: patientData.emergencyContact
+        } : null
+      };
+    }));
+
+    res.json(enrichedAppointments);
   } catch (err) { res.status(500).json({ error: 'Failed to fetch appointments' }); }
 });
 
@@ -960,6 +1014,7 @@ app.get('/doctor/patients', verifyToken, async (req, res) => {
       }
       return {
         id: u._id,
+        userId: u._id,
         name: u.name,
         email: u.email,
         phone: u.phone,

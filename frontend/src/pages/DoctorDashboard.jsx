@@ -3,11 +3,14 @@ import { Activity, Clock, AlertTriangle, FileText, Check, X, ShieldAlert, Heart,
 
 export default function DoctorDashboard() {
   const [queue, setQueue] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // Drawer States
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isAppointmentDrawerOpen, setIsAppointmentDrawerOpen] = useState(false);
   
   // Prescription Form States
   const [prescriptionName, setPrescriptionName] = useState('');
@@ -35,8 +38,25 @@ export default function DoctorDashboard() {
     }
   };
 
+  const fetchAppointments = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/doctor/appointments', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setAppointments(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchQueue();
+    fetchAppointments();
   }, []);
 
   const handleOpenReview = (patient) => {
@@ -53,6 +73,53 @@ export default function DoctorDashboard() {
     setSelectedPatient(null);
   };
 
+  const handleAppointmentClick = async (appointment) => {
+    setSelectedAppointment(appointment);
+    setSelectedPatient(appointment.patient || null);
+    setIsAppointmentDrawerOpen(true);
+    
+    console.log('Appointment clicked:', appointment);
+
+    if (appointment.patient) {
+      return;
+    }
+    
+    // Fetch patient details
+    try {
+      const response = await fetch(`http://localhost:5001/doctor/patients`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const patients = await response.json();
+      console.log('All patients:', patients);
+      console.log('Looking for patient with userId:', appointment.userId);
+      
+      const appointmentUserId = String(appointment.userId || '');
+      const patient = patients.find(p => (
+        String(p.id || '') === appointmentUserId ||
+        String(p._id || '') === appointmentUserId ||
+        String(p.userId || '') === appointmentUserId
+      ));
+      console.log('Found patient:', patient);
+      
+      if (patient) {
+        setSelectedPatient(patient);
+      } else {
+        console.warn('Patient not found for appointment');
+        setSelectedPatient(null);
+      }
+    } catch (err) {
+      console.error('Failed to fetch patient details:', err);
+    }
+  };
+
+  const handleCloseAppointmentDrawer = () => {
+    setIsAppointmentDrawerOpen(false);
+    setSelectedAppointment(null);
+    setSelectedPatient(null);
+  };
+
   const handleIssuePrescription = async (e) => {
     e.preventDefault();
     if (!prescriptionName || !prescriptionDosage || !prescriptionSchedule || !selectedPatient) return;
@@ -61,7 +128,7 @@ export default function DoctorDashboard() {
     await new Promise(r => setTimeout(r, 600)); // smooth experience indicator
 
     const payload = {
-      userId: selectedPatient.userId || '65f123456789abcdef012345',
+      userId: selectedPatient.userId || selectedPatient.id || selectedPatient._id || '65f123456789abcdef012345',
       name: prescriptionName,
       dosage: prescriptionDosage,
       schedule: prescriptionSchedule
@@ -191,6 +258,58 @@ export default function DoctorDashboard() {
             <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Stable Telemetry (L1-2)</div>
           </div>
         </div>
+      </div>
+
+      {/* Appointments Section */}
+      <div className="card glass-panel" style={{ padding: '24px', marginBottom: '32px', border: '1px solid var(--border-color)' }}>
+        <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Clock size={20} style={{ color: 'var(--primary-color)' }} />
+          Patient Appointments
+        </h3>
+        {appointments.length === 0 ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <p style={{ fontSize: '14px' }}>No appointments scheduled</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {appointments.map((apt) => (
+              <div 
+                key={apt._id} 
+                onClick={() => handleAppointmentClick(apt)}
+                style={{ 
+                  padding: '16px', 
+                  backgroundColor: 'rgba(0,0,0,0.1)', 
+                  borderRadius: '12px', 
+                  border: '1px solid var(--border-color)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.15)'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.1)'}
+              >
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '15px' }}>{apt.type || 'General Consultation'}</div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    {apt.doctor || 'Dr. Assigned'} • {new Date(apt.date).toLocaleDateString()}
+                  </div>
+                </div>
+                <span style={{ 
+                  padding: '6px 12px', 
+                  borderRadius: '20px', 
+                  fontSize: '12px', 
+                  fontWeight: 700,
+                  backgroundColor: 'var(--primary-glow)',
+                  color: 'var(--primary-color)'
+                }}>
+                  Scheduled
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Main Table */}
@@ -529,6 +648,142 @@ export default function DoctorDashboard() {
                     HIPAA Sign-Off & Resolve <Check size={16} />
                   </>
                 )}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Appointment Patient Details Drawer */}
+      {isAppointmentDrawerOpen && selectedAppointment && (
+        <div className="drawer-backdrop" onClick={handleCloseAppointmentDrawer}>
+          <div 
+            className="drawer-sheet glass-panel" 
+            style={{ 
+              borderLeft: '1px solid var(--border-color)', 
+              boxShadow: 'var(--shadow-lg)' 
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Drawer Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '28px', borderBottom: '1px solid var(--border-color)' }}>
+              <div>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary-color)', backgroundColor: 'var(--primary-glow)', padding: '4px 10px', borderRadius: '20px' }}>
+                  📅 APPOINTMENT DETAILS
+                </span>
+                <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '6px' }}>Patient Information</h3>
+              </div>
+              <button 
+                onClick={handleCloseAppointmentDrawer}
+                style={{ color: 'var(--text-secondary)', padding: '6px', borderRadius: '50%' }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--surface-hover)'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Scrollable Panel */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              
+              {/* Appointment Details */}
+              <div>
+                <h4 style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>
+                  Appointment Information
+                </h4>
+                <div className="card" style={{ backgroundColor: 'rgba(0,0,0,0.15)', border: '1px solid var(--border-color)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', padding: '16px' }}>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Appointment Type</span>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{selectedAppointment.type || 'General Consultation'}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Assigned Doctor</span>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{selectedAppointment.doctor || 'Dr. Assigned'}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Date</span>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{new Date(selectedAppointment.date).toLocaleDateString()}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Time</span>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{selectedAppointment.time || 'TBD'}</div>
+                  </div>
+                  {selectedAppointment.mode && (
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Mode</span>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{selectedAppointment.mode}</div>
+                    </div>
+                  )}
+                  {selectedAppointment.location && (
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Location</span>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{selectedAppointment.location}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Patient Details */}
+              {selectedPatient ? (
+                <div>
+                  <h4 style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>
+                    Patient Demographics
+                  </h4>
+                  <div className="card" style={{ backgroundColor: 'rgba(0,0,0,0.15)', border: '1px solid var(--border-color)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', padding: '16px' }}>
+                    <div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Full Name</span>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{selectedPatient.name}</div>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Email</span>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{selectedPatient.email}</div>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Phone</span>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{selectedPatient.phone || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Date of Birth</span>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{selectedPatient.dob || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Risk Level</span>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: selectedPatient.risk === 'High' ? 'var(--danger-color)' : selectedPatient.risk === 'Medium' ? 'var(--warning-color)' : 'var(--success-color)' }}>
+                        {selectedPatient.risk || 'Low'}
+                      </div>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Last Visit</span>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{selectedPatient.lastVisit || 'No visits recorded'}</div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  <AlertTriangle size={32} style={{ color: 'var(--warning-color)', marginBottom: '12px' }} />
+                  <p style={{ fontSize: '14px', fontWeight: 600 }}>Patient details not found</p>
+                  <p style={{ fontSize: '12px', marginTop: '4px' }}>The appointment may not be linked to a patient record</p>
+                  {selectedAppointment && selectedAppointment.userId && (
+                    <p style={{ fontSize: '11px', marginTop: '8px', color: 'var(--text-secondary)' }}>
+                      Appointment userId: {selectedAppointment.userId}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Drawer Footer */}
+            <div style={{ padding: '24px 28px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={handleCloseAppointmentDrawer}
+                className="btn-primary"
+                style={{
+                  padding: '12px 24px',
+                  background: 'linear-gradient(90deg, var(--primary-color), var(--secondary-color))'
+                }}
+              >
+                Close
               </button>
             </div>
 
