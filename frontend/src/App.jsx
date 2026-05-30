@@ -574,7 +574,6 @@ function App() {
       }
     })();
   }, []);
-  }, []);
 
   const handleLoginSuccess = (role, user) => {
     localStorage.setItem('role', role);
