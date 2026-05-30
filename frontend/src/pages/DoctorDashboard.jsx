@@ -4,6 +4,8 @@ import { Activity, Clock, AlertTriangle, FileText, Check, X, ShieldAlert, Heart,
 export default function DoctorDashboard() {
   const [queue, setQueue] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [appointmentsError, setAppointmentsError] = useState(null);
+  const [queueError, setQueueError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   
   // Drawer States
@@ -29,51 +31,43 @@ export default function DoctorDashboard() {
       });
       const contentType = response.headers.get('content-type') || '';
       if (!response.ok) {
-        if (response.status === 401) console.warn('Unauthorized when fetching triage queue');
-        return;
-      }
-      if (contentType.includes('application/json')) {
-        const data = await response.json();
-        if (Array.isArray(data)) setQueue(data);
-      } else {
-        console.warn('Non-JSON response for triage_queue', contentType);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchAppointments = async () => {
-    try {
-      const response = await fetch('http://localhost:5001/doctor/appointments', {
-        headers: {
+         const message = response.status === 401 ? 'Unauthorized access to triage queue' : `Failed to fetch triage queue: ${response.status}`;
+         console.warn(message);
+         setQueueError(message);
+         return;
+       }
+       if (contentType.includes('application/json')) {
+         const data = await response.json();
+         if (Array.isArray(data)) setQueue(data);
+       } else {
+         const message = `Non-JSON response for triage_queue (${contentType})`;
+         console.warn(message);
+         setQueueError(message);
+       }
+     } catch (err) {
+       console.error(err);
+       setQueueError(err.message || 'Failed to fetch triage queue');
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       const contentType = response.headers.get('content-type') || '';
       if (!response.ok) {
-        if (response.status === 401) console.warn('Unauthorized when fetching doctor appointments');
-        return;
-      }
-      if (contentType.includes('application/json')) {
-        const data = await response.json();
-        if (Array.isArray(data)) setAppointments(data);
-      } else {
-        console.warn('Non-JSON response for doctor/appointments', contentType);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    fetchQueue();
-    fetchAppointments();
-  }, []);
-
-  const handleOpenReview = (patient) => {
+         const message = response.status === 401 ? 'Unauthorized access to doctor appointments' : `Failed to fetch doctor appointments: ${response.status}`;
+         console.warn(message);
+         setAppointmentsError(message);
+         return;
+       }
+       if (contentType.includes('application/json')) {
+         const data = await response.json();
+         if (Array.isArray(data)) setAppointments(data);
+       } else {
+         const message = `Non-JSON response for doctor/appointments (${contentType})`;
+         console.warn(message);
+         setAppointmentsError(message);
+       }
+     } catch (err) {
+       console.error(err);
+       setAppointmentsError(err.message || 'Failed to fetch doctor appointments');
     setSelectedPatient(patient);
     setIsDrawerOpen(true);
     setPrescribeMessage(null);
@@ -280,7 +274,12 @@ export default function DoctorDashboard() {
           <Clock size={20} style={{ color: 'var(--primary-color)' }} />
           Patient Appointments
         </h3>
-        {appointments.length === 0 ? (
+        {appointmentsError ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--danger-color)' }}>
+            <p style={{ fontSize: '14px' }}>Unable to load appointments.</p>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{appointmentsError}</p>
+          </div>
+        ) : appointments.length === 0 ? (
           <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
             <p style={{ fontSize: '14px' }}>No appointments scheduled</p>
           </div>
@@ -307,7 +306,10 @@ export default function DoctorDashboard() {
                 <div>
                   <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '15px' }}>{apt.type || 'General Consultation'}</div>
                   <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    {apt.doctor || 'Dr. Assigned'} • {new Date(apt.date).toLocaleDateString()}
+                    Patient: {apt.patient?.name || 'Unknown Patient'}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    {apt.doctor || 'Dr. Assigned'} • {apt.date ? new Date(apt.date).toLocaleDateString() : 'Date unavailable'}
                   </div>
                 </div>
                 <span style={{ 
@@ -332,6 +334,12 @@ export default function DoctorDashboard() {
           <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 600 }}>
             <Loader2 size={36} className="animate-spin" style={{ margin: '0 auto 12px', color: 'var(--primary-color)', animation: 'spin 1s linear infinite' }} />
             Retrieving Encrypted Telemetry...
+          </div>
+        ) : queueError ? (
+          <div style={{ padding: '60px', textAlign: 'center', color: 'var(--danger-color)' }}>
+            <AlertTriangle size={48} style={{ marginBottom: '16px' }} />
+            <h4 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Could not load triage queue</h4>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{queueError}</p>
           </div>
         ) : queue.length === 0 ? (
           <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -777,10 +785,15 @@ export default function DoctorDashboard() {
                 <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
                   <AlertTriangle size={32} style={{ color: 'var(--warning-color)', marginBottom: '12px' }} />
                   <p style={{ fontSize: '14px', fontWeight: 600 }}>Patient details not found</p>
-                  <p style={{ fontSize: '12px', marginTop: '4px' }}>The appointment may not be linked to a patient record</p>
+                  <p style={{ fontSize: '12px', marginTop: '4px' }}>The appointment may not be linked to a patient record or patient data is unavailable.</p>
                   {selectedAppointment && selectedAppointment.userId && (
                     <p style={{ fontSize: '11px', marginTop: '8px', color: 'var(--text-secondary)' }}>
                       Appointment userId: {selectedAppointment.userId}
+                    </p>
+                  )}
+                  {selectedAppointment && selectedAppointment.patient && selectedAppointment.patient.name && (
+                    <p style={{ fontSize: '11px', marginTop: '8px', color: 'var(--text-secondary)' }}>
+                      Patient Name (fetched): {selectedAppointment.patient.name}
                     </p>
                   )}
                 </div>
